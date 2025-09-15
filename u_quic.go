@@ -151,6 +151,24 @@ func (q *UQUICConn) SendSessionTicket(opts QUICSessionTicketOptions) error {
 	return quicError(c.sendSessionTicket(opts.EarlyData, opts.Extra))
 }
 
+// StoreSession stores a session previously received in a QUICStoreSession event
+// in the ClientSessionCache.
+// The application may process additional events or modify the SessionState
+// before storing the session.
+func (q *UQUICConn) StoreSession(session *SessionState) error {
+	c := q.conn
+	if !c.isClient {
+		return quicError(errors.New("tls: StoreSessionTicket called on the server"))
+	}
+	cacheKey := c.clientSessionCacheKey()
+	if cacheKey == "" {
+		return nil
+	}
+	cs := &ClientSessionState{session: session}
+	c.config.ClientSessionCache.Put(cacheKey, cs)
+	return nil
+}
+
 // ConnectionState returns basic TLS details about the connection.
 func (q *UQUICConn) ConnectionState() ConnectionState {
 	return q.conn.ConnectionState()
